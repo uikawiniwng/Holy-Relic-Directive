@@ -150,7 +150,11 @@ variables_update_rules:
         [陆行舰型号: string]: {
           在场: boolean;
           等级: string;
+          状态: string;
           描述: string;
+          装甲: number;
+          耐久: number;
+          最大耐久: number;
           设施已用容量: number;
           设施容量: number;
           设施等级上限: number;
@@ -183,23 +187,29 @@ variables_update_rules:
         type: string
         check:
           - 随当前陆行舰外观、尺寸、核心功能或重大损伤变化更新
+      装甲: &Module_variation
+        type: number
+        check:
+          - 随当前陆行舰等级、舰体扩建或结构模块变化更新
+      耐久: 
+        type: number
+        check:
+          - 随舰体损伤、维修、模块变化更新
+      最大耐久: *Module_variation
       设施已用容量: &Occupied_space
         type: number
         check:
           - 随安装、卸载、等级变化更新
           - 占容总和不得超过对应容量
-      设施容量: &maximum_capacity
-        type: number
-        check:
-          - 随当前陆行舰等级、舰体扩建或结构模块变化更新
+      设施容量: *Module_variation
       设施等级上限:
         type: number
         check:
           - 随当前陆行舰等级、科技权限或工程设施变化更新
       武器已用容量: *Occupied_space
-      武器容量: *maximum_capacity
+      武器容量: *Module_variation
       机库已用容量: *Occupied_space
-      机库容量: *maximum_capacity
+      机库容量: *Module_variation
       舰内设施:
         type: |-
           {
