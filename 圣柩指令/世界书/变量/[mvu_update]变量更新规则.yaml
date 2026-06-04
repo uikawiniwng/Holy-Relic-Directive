@@ -11,6 +11,35 @@ variables_update_rules:
     check:
       - 随<user>移动实时变更
       - 按实际情况保留5~7层，从大到小排列
+  地图坐标:
+    format: [x, y]
+    value: 记录<user>或当前陆行舰在地表战略地图上的坐标；地下方舟主接驳点为[0, 0]
+    check:
+      - 1坐标单位=1公里
+      - 只用于地表战略地图；方舟内部、舰内房间、室内战斗不因微小移动频繁更新
+      - 随<user>或当前陆行舰完成跨点位、跨区域、抵达入口、抵达任务目标等明确移动后更新
+      - 若当前位置是大型区域，坐标应记录当前入口、边缘、核心地标或具体任务点，不只写区域中心
+  所在区域:
+    type: string
+    value: 记录当前位置所属的大型区域、污染带、安全走廊、城市废墟、封锁区或移动站点范围
+    check:
+      - 与地点、地图坐标、纳米尘污染等级保持一致
+      - 从大型区域边缘深入核心时，应随剧情阶段更新为更具体的区域描述
+  地图移动记录:
+    type: |-
+      {
+        最近直线距离: string;
+        理论最短耗时: string;
+        实际耗时: string;
+        路径说明: string;
+      }
+    check:
+      - 发生地表移动、任务行军、陆行舰转移或区域深入时更新
+      - 直线距离使用d=sqrt((x2-x1)^2+(y2-y1)^2)，单位为公里
+      - 理论最短耗时=直线距离/当前移动速度，只作为下限
+      - 实际耗时不得小于理论最短耗时
+      - 若有污染、废墟、裂谷、敌袭、搜索、绕路、隐蔽行军或补给等待，实际耗时必须高于理论最短耗时
+      - 路径说明需用自然语言写明方向、途经区域、风险修正或为什么耗时增加
   天气:
     format: ${天气现象}，${气温}，${湿度}，${风向}
     check:
@@ -24,16 +53,15 @@ variables_update_rules:
     type: |-
       {
         [任务名称: string]: {
-          状态: string; // 任务当前状态
-          进展: string; // 任务的当前进展与阶段说明
-          详情: string; // 任务委托方、等级与详细描述
-          目标: string; // 完成任务所需的条件&时间
-          奖励: string; // 任务奖励&领取方式
+          类型: string; // 主线/支线/委派/探索/回收/防御等任务类型
+          简介: string; // 任务背景、委托方与当前进展概述
+          目标: string; // 完成任务所需的条件与时间
+          奖励: string; // 任务奖励与领取方式
         }
       }
     check:
       - 随剧情推进、<user>实际行为更新
-      - 任务当前状态可为任意描述，根据实际情况填写，包括但不限于`进行中/已完成/失败/可结算`等等
+      - 任务名作为key，任务内容只记录类型、简介、目标、奖励
       - 任务完成且领取奖励后直接删除该任务
 
   主角:
@@ -43,16 +71,27 @@ variables_update_rules:
         - 随剧情推进、角色实际行为更新
         - 可同时拥有多个身份
         - 相似或重复的身份不记录
-    SRB功绩:
+    功绩点:
       type: number
-      value: 记录<user>在SRB绩效系统获得的功绩
+      value: 记录<user>当前可用于MSP兑换的功绩点
       check:
-        - 完成任务或达成特定成就时增加
+        - 完成任务、达成特定成就或兑换物资时更新
     功绩排名:
       format: ${SRB指挥官等级}(${排名})
       value: 记录<user>在SRB绩效系统中的功绩排名
       check:
         - 达到进入排名的标准时更新
+    最高功绩:
+      type: number
+      value: 记录<user>历史达到过的最高功绩点，用于指挥官评级判定
+      check:
+        - 当前功绩点超过历史最高值时更新
+        - 消费功绩点时不降低
+    评级:
+      type: string
+      value: 记录<user>当前指挥官评级
+      check:
+        - 根据最高功绩和关键剧情节点更新
     任务完成数量:
       type: number
       check:
@@ -108,20 +147,21 @@ variables_update_rules:
       四维: 交涉 | 指挥 | 瞄准 | 智力
       check:
         - 单次变化应有明确的剧情依据
-  信用点: &currency
-    type: number
-    check:
-      - 随交易、获取、消费更新
-      - 四舍五入取整
-  钛币: *currency
+    信用点: &currency
+      type: number
+      check:
+        - 随地下方舟交易、获取、消费更新
+        - 四舍五入取整
+    钛币: *currency
 
   陆行舰:
     type: |-
       {
-        [陆行舰型号: string]: {
+        [陆行舰名称: string]: {
           在场: boolean;
           等级: string;
           状态: string;
+          所在位置: string;
           描述: string;
           装甲: number;
           耐久: number;
@@ -135,49 +175,78 @@ variables_update_rules:
           机库容量: number;
           舰内设施: { [设施名称: string]: { 等级: string; 类型: string; 效果: { [k: string]: string }; 占容: number; 描述: string; 状态: string } };
           舰载武装: { [武装名称: string]: { 等级: string; 类型: string; 射程: string; 射击次数: string; 威力: string; 效果: { [k: string]: string }; 占容: number; 描述: string; 状态: string } };
-          舰载机库: { [机库名称: string]: { 等级: string; 类型: string; 占容: number; 描述: string; 状态: string } };
+          舰载机库: { [载具名称: string]: { 等级: string; 类型: string; 效果: { [k: string]: string }; 占容: number; 描述: string; 状态: string } };
+          资源: {
+            物品库: { [物品名称: string]: { 描述: string; 类型: string; 数量: number } };
+            武备库: { [武器名称: string]: { 等级: string; 类型: string; 效果: { [k: string]: string }; 描述: string; 数量: number } };
+          };
         }
       }
     check:
-      - 随舰船等级变化更新
-      - 若只存在一艘当前陆行舰，同步维护陆行舰.等级、描述、设施最大数量、设施等级上限、武器最大数量、机库容量
+      - 陆行舰名称必须使用唯一、完整、正式名称；不要只用“陆行舰”作为key
+      - 每艘陆行舰独立记录等级、状态、所在位置、装甲、耐久、容量、设施、武装、机库与随舰资源
+      - 若存在多艘陆行舰，只有<user>当前所在或当前场景直接随行的陆行舰可标记为在场:true
+      - 其他陆行舰即使属于同一舰队、停泊在附近或可远程联络，也应标记为在场:false
+      - 换舰、登舰、离舰、编队转移或场景切换到其他陆行舰时，必须同步更新所有陆行舰的在场状态
 
-    "${陆行舰型号}":
+    "${陆行舰名称}":
       在场:
         type: boolean
         check:
-          - 随剧情推进、角色行动更新
+          - 表示<user>当前是否位于该陆行舰内部或直接随该舰行动
+          - 多舰存在时，同一时间通常只能有一艘陆行舰为在场:true
+          - <user>登舰、换舰、离舰、被转移或当前场景切换到其他陆行舰时，必须同步更新所有陆行舰的在场状态
       等级:
         type: string
+        range: 民用级 | 商业级 | 标准级 | 堡垒级 | 方舟级
         check:
           - 随当前陆行舰等级变化更新
+      状态:
+        type: string
+        check:
+          - 记录舰体总体状态，例如完好、轻损、重损、维修中、封存、失联、停泊、远征中
+          - 随战损、修复、停泊、远征、封存或失联变化更新
+      所在位置:
+        type: string
+        check:
+          - 记录该舰当前停泊地、行动区域或随队位置
+          - 换舰、调度、停泊、远征或失联时更新
       描述:
         type: string
         check:
           - 随当前陆行舰外观、尺寸、核心功能或重大损伤变化更新
-      装甲: &Module_variation
+      装甲:
         type: number
         check:
-          - 随当前陆行舰等级、舰体扩建或结构模块变化更新
+          - 记录舰体当前有效装甲值或装甲评分
+          - 随舰体升级、装甲改造、严重战损或大修变化更新
       耐久: 
         type: number
         check:
-          - 随舰体损伤、维修、模块变化更新
-      最大耐久: *Module_variation
+          - 记录舰体当前耐久，不得超过最大耐久
+          - 随战斗损伤、事故、维修或大修变化更新
+      最大耐久:
+        type: number
+        check:
+          - 记录舰体理论最大耐久
+          - 随舰体等级、结构升级或核心改造变化更新
       设施已用容量: &Occupied_space
         type: number
         check:
           - 随安装、卸载、等级变化更新
           - 占容总和不得超过对应容量
-      设施容量: *Module_variation
+      设施容量: &maximum_capacity
+        type: number
+        check:
+          - 随当前陆行舰等级、舰体扩建或结构模块变化更新
       设施等级上限:
         type: number
         check:
           - 随当前陆行舰等级、科技权限或工程设施变化更新
       武器已用容量: *Occupied_space
-      武器容量: *Module_variation
+      武器容量: *maximum_capacity
       机库已用容量: *Occupied_space
-      机库容量: *Module_variation
+      机库容量: *maximum_capacity
       舰内设施:
         type: |-
           {
@@ -185,14 +254,14 @@ variables_update_rules:
               等级: string;
               类型: string;
               效果: { [效果名: string]: string };
-              占容: string;
+              占容: number;
               描述: string;
               状态: string;
             }
           }
         check:
           - 随设施建造、升级、损坏、修复或拆除更新
-          - 不得超过陆行舰.设施容量和陆行舰.设施等级上限
+          - 不得超过该陆行舰的设施容量和设施等级上限
       舰载武装:
         type: |-
           {
@@ -203,29 +272,38 @@ variables_update_rules:
               射击次数: string;
               威力: string;
               效果: { [效果名: string]: string };
-              占容: string;
+              占容: number;
               描述: string;
               状态: string;
             }
           }
         check:
           - 随舰船武装安装、更换、损坏、修复或弹药状态变化更新
-          - 不得超过陆行舰.武器容量
+          - 不得超过该陆行舰的武器容量
       舰载机库:
         type: |-
           {
-            [机库名称: string]: {
+            [载具名称: string]: {
               等级: string;
               类型: string;
               效果: { [效果名: string]: string };
-              占容: string;
+              占容: number;
               描述: string;
               状态: string;
             }
           }
         check:
           - 随舰船载具装载、替换、改装、损毁或修复更新
-          - 所有载具已用容量合计不得超过陆行舰.机库容量
+          - 所有载具已用容量合计不得超过该陆行舰的机库容量
+      资源:
+        type: |-
+          {
+            物品库: { [物品名称: string]: { 描述: string; 类型: string; 数量: number } };
+            武备库: { [武器名称: string]: { 等级: string; 类型: string; 效果: { [效果名: string]: string }; 描述: string; 数量: number } };
+          }
+        check:
+          - 记录该舰随舰库存；公共仓库或主角随身物品不要混入其他舰
+          - 换舰或转运资源时，同步扣减来源舰并增加目标舰
   资源:
     物品库:
       type: |-
@@ -281,11 +359,11 @@ variables_update_rules:
     type: |-
       {
         [代号: string]: {
-          在场: boolean;
+          当前在场: boolean;
           身份: string;
           稀有度: string;
           精神负荷: number;
-          好感度: number;
+          好感: number;
           性格: string;
           外貌: string;
           着装: string;
@@ -305,7 +383,7 @@ variables_update_rules:
       - 战术记录该人形默认行动指令，例如先移动、攻击、压制、撤回或保护指定目标
       - 武器需填写射程、射击次数、威力和效果；非武器可将不适用字段填为无
     "${角色名}":
-      在场:
+      当前在场:
         type: boolean
         check:
           - 随剧情推进、角色行动更新
@@ -321,7 +399,7 @@ variables_update_rules:
         check:
           - 变化区间为-5~5
           - 具体变化规则参考"精神负荷定义"
-      好感度:
+      好感:
         type: number
         range: -100~100
         check:
@@ -335,8 +413,8 @@ variables_update_rules:
       战术: 
         type: string
         check:
-        - 记录角色当前默认行动指令或战斗倾向
-        - 仅在角色明确调整战术、战场条件迫使战术变化或长期行为稳定改变时更新
+          - 记录角色当前默认行动指令或战斗倾向
+          - 仅在角色明确调整战术、战场条件迫使战术变化或长期行为稳定改变时更新
       职业: 
         type: string
         check:
@@ -352,8 +430,8 @@ variables_update_rules:
       能力.${六维检定与潜能}: 
         type: string
         六维检定与潜能: 破坏能级 | 结构韧性 | 神经机动 | 链路算力 | 工程制造 | 理智屏障 | 素体潜能
-      check:
-        - 随明确机体数据变化而更新
+        check:
+          - 随明确机体数据变化而更新
   资讯:
     舰上信息:
       type: |-
@@ -363,7 +441,7 @@ variables_update_rules:
           AI建议: string; // 舰载AI对<user>的建议
           指挥官动向: string; // 在别人眼里看来<user>在做什么
         }
-      check: &news_check
+      check:
         - 公告内容为空时需立刻进行一次全量更新
         - 每次回复更新其中2~3条
         - 每条公告内容至少80字
@@ -376,5 +454,7 @@ variables_update_rules:
           高价通缉: string; // 高价通缉令信息
         }
       check:
-        - *news_check
+        - 公告内容为空时需立刻进行一次全量更新
+        - 每次回复更新其中2~3条
+        - 每条公告内容至少80字
         - 不得围绕<user>展开

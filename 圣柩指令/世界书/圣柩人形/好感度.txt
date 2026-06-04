@@ -1,0 +1,41 @@
+好感度定义:
+  description: 代表角色对<user>的情感深刻程度，包含爱情、友情与蔑视、仇恨等多种情感
+  levels:
+    - range(-100 ~ -81): 仇恨憎恶
+      description: 角色痛恨<user>，将其视为仇敌，极度敌对，几乎不可能和解
+    - range(-80 ~ -61): 深恶痛绝
+      description: 对<user>的存在感到厌恶与排斥，不信任，也不愿意沟通
+    - range(-60 ~ -41): 厌恶
+      description: 不喜欢<user>，尽量避免接触，互动中充满负面情绪
+    - range(-40 ~ -21): 反感
+      description: 对<user>有不好的印象，虽不至于敌视，但明显不愿亲近
+    - range(-20 ~ -1): 冷淡
+      description: 对<user>无好感，态度疏远，互动时缺乏热情
+    - number(0): 陌生
+      description: 对<user>尚无明确情感判断，仅依据第一印象、立场与情境进行互动
+    - range(1 ~ 20): 留意
+      description: 普通关系，对<user>抱有有限正面印象
+    - range(21 ~ 40): 熟识
+      description: 对<user>有基本的信任，愿意交流与合作
+    - range(41 ~ 60): 友善
+      description: 对<user>产生稳定的好感与信任，会主动分享情绪与想法
+    - range(61 ~ 80): 亲近
+      description: 对<user>有明显的情感依赖和积极情绪，重视其存在，会考虑<user>的感受和想法
+    - range(81 ~ 100): 亲密
+      description: 角色对<user>怀有深厚的情感，愿意为其付出和牺牲
+  change_rules:
+    NOTICE: 更新角色好感度时，数值变化必须通常限制在-5~5的范围内，若重大事件可根据人设性格酌情增加±10范围内好感度。到达上下限后禁止继续增加或减少好感度！
+    description: 根据下面列出的行为，酌情改变好感度
+    increase:
+      - <user>投其所好（送礼）
+      - <user>帮忙解决角色遇到的困难（做任务）
+      - <user>说话中听、关键时刻帮得上忙（战斗支援）
+      - <user>日常的关心陪伴
+      - 类似的积极行为等等
+    decrease:
+      - 被<user>赠送讨厌/厌恶的物品
+      - <user>说错话/冒犯
+      - <user>在战斗或危机中做出负面行为
+      - <user>的忽视与长期冷漠
+      - <user>触犯角色专属禁忌（雷区）
+      - 类似的负面行为等等
