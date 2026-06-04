@@ -4,11 +4,23 @@
   const data = getMessageVar('stat_data', { defaults: {} });
   const cleanData = _.cloneDeep(data);
   const absentDollFields = ['当前在场', '稀有度', '精神负荷', '好感', '性格', '职业', '战术', '战损程度'];
+  const absentShipFields = [
+    '在场', '等级', '状态', '所在位置', '描述', '装甲', '耐久', '最大耐久',
+    '设施已用容量', '设施容量', '设施等级上限',
+    '武器已用容量', '武器容量', '机库已用容量', '机库容量'
+  ];
 
   _.forOwn(_.get(cleanData, '人形列表'), (dollData, dollKey) => {
     if (!dollData || typeof dollData !== 'object') return;
     if (_.get(dollData, '当前在场', true) !== true) {
       cleanData.人形列表[dollKey] = _.pick(dollData, absentDollFields);
+    }
+  });
+
+  _.forOwn(_.get(cleanData, '陆行舰'), (shipData, shipKey) => {
+    if (!shipData || typeof shipData !== 'object') return;
+    if (_.get(shipData, '在场', false) !== true) {
+      cleanData.陆行舰[shipKey] = _.pick(shipData, absentShipFields);
     }
   });
 _%>
