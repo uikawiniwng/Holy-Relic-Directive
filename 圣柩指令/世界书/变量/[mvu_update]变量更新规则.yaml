@@ -71,27 +71,17 @@ variables_update_rules:
         - 随剧情推进、角色实际行为更新
         - 可同时拥有多个身份
         - 相似或重复的身份不记录
-    功绩点:
+    SRB功绩:
       type: number
-      value: 记录<user>当前可用于MSP兑换的功绩点
+      value: 记录<user>在SRB绩效系统获得的功绩
       check:
-        - 完成任务、达成特定成就或兑换物资时更新
+        - 完成任务或达成特定成就时增加
+        - 除违反SRB规定外，不会减少
     功绩排名:
       format: ${SRB指挥官等级}(${排名})
       value: 记录<user>在SRB绩效系统中的功绩排名
       check:
         - 达到进入排名的标准时更新
-    最高功绩:
-      type: number
-      value: 记录<user>历史达到过的最高功绩点，用于指挥官评级判定
-      check:
-        - 当前功绩点超过历史最高值时更新
-        - 消费功绩点时不降低
-    评级:
-      type: string
-      value: 记录<user>当前指挥官评级
-      check:
-        - 根据最高功绩和关键剧情节点更新
     任务完成数量:
       type: number
       check:
@@ -150,7 +140,7 @@ variables_update_rules:
     信用点: &currency
       type: number
       check:
-        - 随地下方舟交易、获取、消费更新
+        - 随交易、获取、消费更新
         - 四舍五入取整
     钛币: *currency
 
@@ -218,7 +208,7 @@ variables_update_rules:
       装甲:
         type: number
         check:
-          - 记录舰体当前有效装甲值或装甲评分
+          - 记录舰体有效装甲值
           - 随舰体升级、装甲改造、严重战损或大修变化更新
       耐久: 
         type: number
@@ -235,7 +225,7 @@ variables_update_rules:
         check:
           - 随安装、卸载、等级变化更新
           - 占容总和不得超过对应容量
-      设施容量: &maximum_capacity
+      设施容量: &Module_variation
         type: number
         check:
           - 随当前陆行舰等级、舰体扩建或结构模块变化更新
@@ -244,9 +234,9 @@ variables_update_rules:
         check:
           - 随当前陆行舰等级、科技权限或工程设施变化更新
       武器已用容量: *Occupied_space
-      武器容量: *maximum_capacity
+      武器容量: *Module_variation
       机库已用容量: *Occupied_space
-      机库容量: *maximum_capacity
+      机库容量: *Module_variation
       舰内设施:
         type: |-
           {
