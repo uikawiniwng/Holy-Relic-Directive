@@ -734,9 +734,10 @@
               <div class="property-name">属性</div>
               <div class="property-value-container" style="gap: 5px;">
                 <span class="value-description" id="attr-negotiate">交涉:N/A</span>
-                <span class="value-description" id="attr-command">指挥:N/A</span>
-                <span class="value-description" id="attr-aim">瞄准:N/A</span>
-                <span class="value-description" id="attr-intelligence">智力:N/A</span>
+                <span class="value-description" id="attr-command">统御:N/A</span>
+                <span class="value-description" id="attr-insight">洞察:N/A</span>
+                <span class="value-description" id="attr-logistics">后勤:N/A</span>
+                <span class="value-description" id="attr-resonance">共鸣:N/A</span>
               </div>
             </div>
             <div class="property property-full-width property-bordered">
@@ -1797,11 +1798,21 @@
           document.getElementById('global-mission-count').innerText = SafeGetValue(statData, '主角.任务完成数量', '0');
           document.getElementById('global-story-progress').innerText = SafeGetValue(statData, '剧情进度', '0');
 
-          // --- 主角四维属性 ---
-          const attrMap = { '交涉': 'attr-negotiate', '指挥': 'attr-command', '瞄准': 'attr-aim', '智力': 'attr-intelligence' };
-          for (const [attrName, elId] of Object.entries(attrMap)) {
-            const val = SafeGetValue(statData, `主角.属性.${attrName}`, 'N/A');
-            document.getElementById(elId).innerText = `${attrName}:${val}`;
+          // --- 主角五维属性 ---
+          const commanderAttrMap = {
+            '交涉': { elId: 'attr-negotiate', fallback: '交涉' },
+            '统御': { elId: 'attr-command', fallback: '指挥' },
+            '洞察': { elId: 'attr-insight', fallback: '智力' },
+            '后勤': { elId: 'attr-logistics' },
+            '共鸣': { elId: 'attr-resonance' },
+          };
+          for (const [attrName, config] of Object.entries(commanderAttrMap)) {
+            let val = SafeGetValue(statData, `主角.属性.${attrName}`, '');
+            if ((val === '' || val === 'N/A') && config.fallback) {
+              val = SafeGetValue(statData, `主角.属性.${config.fallback}`, '');
+            }
+            if (val === '' || val === 'N/A' || val === 0 || val === '0') val = 'D';
+            document.getElementById(config.elId).innerText = `${attrName}:${val}`;
           }
 
           // --- 主角技能列表 ---

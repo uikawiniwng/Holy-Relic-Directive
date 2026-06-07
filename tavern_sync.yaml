@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://testingcf.jsdelivr.net/gh/StageDog/tavern_sync/dist/schema/settings.zh.json
+
+# 本项目正文已直接使用 <user> 宏；这里使用不会出现在正文中的占位名，避免误替换普通文本
+user名称: __USER_NAME_PLACEHOLDER__
+
+配置:
+  圣柩指令:
+    类型: 角色卡
+    酒馆中的名称: 圣柩指令
+    本地文件路径: 圣柩指令/圣柩指令
+    导出文件路径: 导出/圣柩指令
