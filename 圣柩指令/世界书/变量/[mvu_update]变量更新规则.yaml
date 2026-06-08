@@ -134,7 +134,7 @@ variables_update_rules:
         - 技能名称必须为中文
     属性.${指挥官五维}:
       type: string
-      指挥官五维: 交涉 | 统御 | 洞察 | 后勤 | 共鸣
+      指挥官四维: 指挥 | 战技 | 共感 | 支援
       value: D | C | B | A | S
       check:
         - 单次变化应有明确的剧情依据
@@ -434,7 +434,7 @@ variables_update_rules:
           AI建议: string; // 舰载AI对<user>的建议
           指挥官动向: string; // 在别人眼里看来<user>在做什么
         }
-      check:
+      check: &ship_news
         - 公告内容为空时需立刻进行一次全量更新
         - 每次回复更新其中2~3条
         - 每条公告内容至少80字
@@ -447,7 +447,5 @@ variables_update_rules:
           高价通缉: string; // 高价通缉令信息
         }
       check:
-        - 公告内容为空时需立刻进行一次全量更新
-        - 每次回复更新其中2~3条
-        - 每条公告内容至少80字
+        - *ship_news
         - 不得围绕<user>展开
